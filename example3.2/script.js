@@ -39,14 +39,14 @@ function init() {
     directionalLight2.intensity = 2
     scene.add( directionalLight2 )
 
-    selectedMaterial = new THREE.MeshStandardMaterial( {color: 'yellow'} )
+    selectedMaterial = new THREE.MeshNormalMaterial()
 
     raycaster = new THREE.Raycaster()
 
     const loader = new Rhino3dmLoader()
     loader.setLibraryPath( 'https://cdn.jsdelivr.net/npm/rhino3dm@7.11.1/' )
 
-    loader.load( 'sphere.3dm', function ( object ) {
+    loader.load( 'ramp.3dm', function ( object ) {
 
         document.getElementById('loader').remove()
         // store material information
@@ -156,4 +156,3 @@ function animate() {
     renderer.render( scene, camera )
 
 }
-
