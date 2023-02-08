@@ -3,9 +3,9 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { Rhino3dmLoader } from 'three/addons/loaders/3DMLoader.js'
 
-let camera, scene, raycaster, renderer
+let camera, scene, raycaster, renderer, selectedMaterial
 const mouse = new THREE.Vector2()
-window.addEventListener('click', onClick);
+window.addEventListener( 'click', onClick);
 
 init()
 animate()
@@ -33,16 +33,40 @@ function init() {
     directionalLight.intensity = 2
     scene.add( directionalLight )
 
+    const directionalLight2 = new THREE.DirectionalLight( 0xffffff )
+    directionalLight2.position.set( 0, 0, -2 )
+    directionalLight2.castShadow = true
+    directionalLight2.intensity = 2
+    scene.add( directionalLight2 )
+
+    selectedMaterial = new THREE.MeshNormalMaterial()
+
     raycaster = new THREE.Raycaster()
 
     const loader = new Rhino3dmLoader()
     loader.setLibraryPath( 'https://cdn.jsdelivr.net/npm/rhino3dm@7.11.1/' )
 
-    loader.load( 'sphere.3dm', function ( object ) {
+    loader.load( 'ramp.3dm', function ( object ) {
 
         document.getElementById('loader').remove()
+        // store material information
+        object.traverse( (child) => {
+            if (child.userData.hasOwnProperty('objectType')) {
+                if (child.userData.objectType === 'Brep') {
+                    child.traverse( (c) => {
+                        if (c === child) return
+                        c.userData.material = c.material
+                        console.log(c.userData)
+                    })
+                } else {
+                    child.userData.material = child.material
+                    console.log(child.userData)
+                }
+            }
+        })
         scene.add( object )
         console.log( object )
+        console.log( scene )
 
     } )
 
@@ -68,10 +92,10 @@ function onClick( event ) {
 
     // reset object colours
     scene.traverse((child, i) => {
-        if (child.isMesh) {
-            child.material.color.set( 'white' )
+        if (child.userData.hasOwnProperty( 'material' )) {
+            child.material = child.userData.material
         }
-    });
+    })
 
     if (intersects.length > 0) {
 
@@ -79,7 +103,19 @@ function onClick( event ) {
         const object = intersects[0].object
         console.log(object) // debug
 
-        object.material.color.set( 'yellow' )
+        object.traverse( (child) => {
+            if (child.parent.userData.objectType === 'Brep') {
+                child.parent.traverse( (c) => {
+                    if (c.userData.hasOwnProperty( 'material' )) {
+                        c.material = selectedMaterial
+                    }
+                })
+            } else {
+                if (child.userData.hasOwnProperty( 'material' )) {
+                    child.material = selectedMaterial
+                }
+            }
+        })
 
         // get user strings
         let data, count
@@ -120,4 +156,3 @@ function animate() {
     renderer.render( scene, camera )
 
 }
-
